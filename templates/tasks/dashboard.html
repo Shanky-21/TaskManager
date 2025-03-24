@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4"> <!-- Added py-4 for vertical padding -->
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1"> <!-- Added column offset for better centering -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Task Dashboard</h2>
+                <a href="{% url 'tasks:create_task' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Task
+                </a>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow-sm"> <!-- Added shadow-sm for subtle elevation -->
+                <div class="card-body p-4"> <!-- Added more padding inside card -->
+                    <h5 class="card-title mb-4">All Tasks</h5>
+                    
+                    <!-- Filter Form -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <select name="user" class="form-select">
+                                        <option value="">All Users</option>
+                                        {% for user in users %}
+                                            <option value="{{ user.id }}" {% if selected_user == user.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ user.get_full_name|default:user.username }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary">Filter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Tasks List -->
+                    <div class="list-group">
+                        {% for task in all_tasks %}
+                            <a href="{% url 'tasks:task_detail' task.uuid %}" 
+                               class="list-group-item list-group-item-action p-3 mb-2 rounded">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ task.title }}</h5>
+                                    <span class="badge bg-{{ task.status }} rounded-pill">
+                                        {{ task.get_status_display }}
+                                    </span>
+                                </div>
+                                <p class="mb-1 text-muted">{{ task.description|truncatewords:30 }}</p>
+                                <small class="text-muted">
+                                    <strong>Assigned to:</strong> 
+                                    {% for user in task.assigned_users.all %}
+                                        {{ user.get_full_name|default:user.username }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </a>
+                        {% empty %}
+                            <div class="text-center py-5 text-muted">
+                                <p>No tasks found.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
