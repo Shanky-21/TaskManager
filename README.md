@@ -306,6 +306,45 @@ curl -X POST http://localhost:8000/api/users/ \
 }
 ```
 
+
+### 2. User Authentication (Get JWT Token)
+
+Get JWT access and refresh tokens for authentication.
+
+**Curl Command:**
+```bash
+curl -X POST http://localhost:8000/api/token/ \
+     -H "Content-Type: application/json" \
+     -d '{
+           "username": "testuser2",
+           "password": "Test@123"
+         }'
+```
+
+**Success Response:**
+```json
+{
+    "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg0...",
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY..."
+}
+```
+
+**Error Response (Invalid Credentials):**
+```bash
+curl -X POST http://localhost:8000/api/token/ \
+     -H "Content-Type: application/json" \
+     -d '{
+           "username": "testuser2",
+           "password": "wrongpassword"
+         }'
+```
+
+**Error Response:**
+```bash
+  {"detail":"No active account found with the given credentials"}%    
+```
+
+
 ## Database Models
 
 ### UserProfile
