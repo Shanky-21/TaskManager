@@ -1,23 +1,30 @@
-
 # Task Manager API
 
 A Django-based Task Management System with REST API support. This system allows users to create tasks, assign them to multiple users, and track individual progress for each assignee.
 
 ## Table of Contents
-- [Task Manager API](#task-manager-api)
-  - [Features](#features)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Project Structure](#project-structure)
-  - [API Documentation](#api-documentation)
-    - [Authentication APIs](#authentication-apis)
-    - [Task APIs](#task-apis)
-    - [User APIs](#user-apis)
-    - [Error Responses](#error-responses)
-  - [Database Models](#database-models)
-  - [Testing](#testing)
-  - [Contributing](#contributing)
-  - [License](#license)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Project Structure](#project-structure)
+- [API Examples](#api-examples)
+  - [Authentication](#authentication)
+    - [User Signup](#1-user-signup)
+    - [Get JWT Token](#2-get-jwt-token)
+  - [Task Operations](#task-operations)
+    - [Create Task](#3-create-task)
+    - [Get Tasks](#4-get-tasks)
+      - [Get Tasks by User](#41-get-tasks-by-user)
+      - [Get My Tasks](#42-get-my-tasks)
+    - [Update Task Status](#5-update-task-status)
+    - [Update Task Details](#6-update-task-details)
+    - [Delete Task](#7-delete-task)
+      - [Success Case](#success-case)
+      - [Error Cases](#error-cases)
+- [Database Models](#database-models)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 - User authentication with JWT
