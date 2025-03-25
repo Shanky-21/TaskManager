@@ -2,17 +2,37 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Task, UserProfile
+from .models import Task, UserTask, UserProfile
 
 class CustomUserCreationForm(UserCreationForm):
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
-    email = forms.EmailField(required=True)
-    phone = forms.CharField(max_length=15, required=True)
-    
-    # Additional fields you might want
-    address = forms.CharField(max_length=200, required=False, widget=forms.Textarea(attrs={'rows': 3}))
-    date_of_birth = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    first_name = forms.CharField(
+        max_length=30, 
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=30, 
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control'})
+    )
+    phone = forms.CharField(
+        max_length=15, 
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    address = forms.CharField(
+        max_length=200, 
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+    )
+    date_of_birth = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
 
     class Meta:
         model = User
@@ -27,6 +47,12 @@ class CustomUserCreationForm(UserCreationForm):
             "password1", 
             "password2"
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs['class'] = 'form-control'
+        self.fields['password1'].widget.attrs['class'] = 'form-control'
+        self.fields['password2'].widget.attrs['class'] = 'form-control'
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -44,19 +70,36 @@ class CustomUserCreationForm(UserCreationForm):
                 date_of_birth=self.cleaned_data["date_of_birth"]
             )
         return user
-      
-class TaskForm(forms.ModelForm):
-    assigned_users = forms.ModelMultipleChoiceField(
+
+class TaskAssignmentForm(forms.Form):
+    user = forms.ModelChoiceField(
         queryset=User.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=True
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
+    status = forms.ChoiceField(
+        choices=UserTask.STATUS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+class TaskForm(forms.ModelForm):
+    # This will be used to collect multiple assignments
+    assignments = forms.JSONField(required=False, widget=forms.HiddenInput())
 
     class Meta:
         model = Task
-        fields = ['title', 'description', 'status', 'assigned_users']
+        fields = ['title', 'description', 'assignments']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4}),
-            'assigned_users': forms.CheckboxSelectMultiple()
+            'title': forms.TextInput(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Enter task title'
+                }
+            ),
+            'description': forms.Textarea(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Enter task description',
+                    'rows': 4
+                }
+            )
         }
-        

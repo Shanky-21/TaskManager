@@ -1,4 +1,5 @@
 # tasks/views.py
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -52,8 +53,10 @@ def edit_task(request, uuid):
 @login_required
 def task_detail(request, uuid):
     task = get_object_or_404(Task, uuid=uuid)
+    user_tasks = task.user_assignments.all()
     return render(request, 'tasks/task_detail.html', {
         'task': task,
+        'user_tasks': user_tasks,
         'can_edit': request.user == task.created_by
     })
 
@@ -84,12 +87,27 @@ def create_task(request):
             task = form.save(commit=False)
             task.created_by = request.user
             task.save()
-            form.save_m2m()  # Save many-to-many relationships
+            
+            # Handle assignments
+            assignments = json.loads(form.cleaned_data.get('assignments', '[]'))
+            for assignment in assignments:
+                UserTask.objects.create(
+                    task=task,
+                    user_id=assignment['user_id'],
+                    status=assignment['status']
+                )
+            
             messages.success(request, 'Task created successfully!')
             return redirect('tasks:dashboard')
     else:
         form = TaskForm()
-    return render(request, 'tasks/create_task.html', {'form': form})
+    
+    context = {
+        'form': form,
+        'users': User.objects.all(),
+        'status_choices': UserTask.STATUS_CHOICES
+    }
+    return render(request, 'tasks/create_task.html', context)
 
 @login_required
 def task_detail(request, uuid):

@@ -1,124 +1,65 @@
 {% extends 'base.html' %}
 
-{% block title %} - Create Task{% endblock %}
-
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <!-- Back to Dashboard Link -->
-            <div class="mb-4">
-                <a href="{% url 'tasks:dashboard' %}" class="text-decoration-none text-muted">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                </a>
-            </div>
-
-            <div class="card shadow-lg border-0">
-                <div class="card-body p-4">
-                    <!-- Header -->
-                    <div class="mb-4">
-                        <h2 class="card-title fw-bold">
-                            <i class="fas fa-plus-circle text-primary me-2"></i>Create New Task
-                        </h2>
-                        <p class="text-muted">Fill in the details below to create a new task</p>
-                    </div>
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <form method="post" class="needs-validation" novalidate>
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Create New Task</h2>
+                    
+                    <form method="post" id="taskForm">
                         {% csrf_token %}
-
-                        <!-- Task Title -->
+                        
+                        <!-- Task Details -->
                         <div class="mb-4">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">
-                                Task Title <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="fas fa-heading text-muted"></i>
-                                </span>
-                                {{ form.title }}
-                            </div>
-                            {% if form.title.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.title.errors|join:", " }}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">Give your task a clear and descriptive title</div>
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+                            {{ form.title }}
                         </div>
 
-                        <!-- Task Description -->
                         <div class="mb-4">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                Description <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="fas fa-align-left text-muted"></i>
-                                </span>
-                                {{ form.description }}
-                            </div>
-                            {% if form.description.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.description.errors|join:", " }}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">Provide detailed information about the task</div>
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
                         </div>
 
-                        <!-- Task Status -->
+                        <!-- Assignments Section -->
                         <div class="mb-4">
-                            <label for="{{ form.status.id_for_label }}" class="form-label">
-                                Status <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light">
-                                    <i class="fas fa-tasks text-muted"></i>
-                                </span>
-                                {{ form.status }}
-                            </div>
-                            {% if form.status.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.status.errors|join:", " }}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Assigned Users -->
-                        <div class="mb-4">
-                            <label class="form-label">
-                                Assign Users <span class="text-danger">*</span>
-                            </label>
-                            <div class="card border">
-                                <div class="card-body">
-                                    <div class="assigned-users-container">
-                                        {{ form.assigned_users }}
+                            <h4>Assign Users</h4>
+                            <div class="assignment-form mb-3">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <select class="form-control" id="userSelect">
+                                            <option value="">Select User</option>
+                                            {% for user in users %}
+                                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
-                                    {% if form.assigned_users.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.assigned_users.errors|join:", " }}
-                                        </div>
-                                    {% endif %}
+                                    <div class="col-md-5">
+                                        <select class="form-control" id="statusSelect">
+                                            <option value="">Select Status</option>
+                                            {% for value, label in status_choices %}
+                                                <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary" onclick="addAssignment()">Add</button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-text">Select one or more users to assign this task to</div>
+
+                            <!-- Assignments List -->
+                            <div id="assignmentsList" class="list-group mb-3">
+                                <!-- Assignments will be added here dynamically -->
+                            </div>
+
+                            {{ form.assignments }}
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="{% url 'tasks:dashboard' %}" class="btn btn-light">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Create Task
-                            </button>
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'tasks:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Task</button>
                         </div>
                     </form>
                 </div>
@@ -126,4 +67,89 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let assignments = [];
+
+function addAssignment() {
+    const userSelect = document.getElementById('userSelect');
+    const statusSelect = document.getElementById('statusSelect');
+    
+    const userId = userSelect.value;
+    const userName = userSelect.options[userSelect.selectedIndex].text;
+    const status = statusSelect.value;
+    const statusText = statusSelect.options[statusSelect.selectedIndex].text;
+
+    if (!userId || !status) {
+        alert('Please select both user and status');
+        return;
+    }
+
+    // Check if user is already assigned
+    if (assignments.some(a => a.user_id === userId)) {
+        alert('This user is already assigned to the task');
+        return;
+    }
+
+    // Add to assignments array
+    assignments.push({
+        user_id: userId,
+        status: status
+    });
+
+    // Update hidden input
+    document.getElementById('id_assignments').value = JSON.stringify(assignments);
+
+    // Add to visual list
+    const assignmentsList = document.getElementById('assignmentsList');
+    const assignmentItem = document.createElement('div');
+    assignmentItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+    assignmentItem.innerHTML = `
+        <div>
+            <strong>${userName}</strong>
+            <span class="badge bg-secondary ms-2">${statusText}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removeAssignment('${userId}')">
+            Remove
+        </button>
+    `;
+    assignmentsList.appendChild(assignmentItem);
+
+    // Reset selects
+    userSelect.value = '';
+    statusSelect.value = '';
+}
+
+function removeAssignment(userId) {
+    assignments = assignments.filter(a => a.user_id !== userId);
+    document.getElementById('id_assignments').value = JSON.stringify(assignments);
+    renderAssignments();
+}
+
+function renderAssignments() {
+    const assignmentsList = document.getElementById('assignmentsList');
+    assignmentsList.innerHTML = '';
+    assignments.forEach(assignment => {
+        const userSelect = document.getElementById('userSelect');
+        const statusSelect = document.getElementById('statusSelect');
+        const userName = [...userSelect.options].find(opt => opt.value === assignment.user_id).text;
+        const statusText = [...statusSelect.options].find(opt => opt.value === assignment.status).text;
+
+        const assignmentItem = document.createElement('div');
+        assignmentItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        assignmentItem.innerHTML = `
+            <div>
+                <strong>${userName}</strong>
+                <span class="badge bg-secondary ms-2">${statusText}</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeAssignment('${assignment.user_id}')">
+                Remove
+            </button>
+        `;
+        assignmentsList.appendChild(assignmentItem);
+    });
+}
+</script>
 {% endblock %}
