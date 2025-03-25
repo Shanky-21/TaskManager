@@ -1,4 +1,4 @@
-```markdown
+
 # Task Manager API
 
 A Django-based Task Management System with REST API support. This system allows users to create tasks, assign them to multiple users, and track individual progress for each assignee.
