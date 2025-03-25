@@ -265,6 +265,47 @@ Response: Current user's details with profile
 }
 ```
 
+## API Examples
+
+### 1. User Signup
+
+Create a new user account with profile information.
+
+**Curl Command:**
+```bash
+curl -X POST http://localhost:8000/api/users/ \
+     -H "Content-Type: application/json" \
+     -d '{
+           "username": "testuser2",
+           "password": "Test@123",
+           "email": "testuser2@example.com",
+           "first_name": "Test",
+           "last_name": "User",
+           "phone": "1234567890",
+           "address": "123 Test Street",
+           "date_of_birth": "1990-01-01"
+         }'
+```
+
+**Response:**
+```json
+{
+    "id": 6,
+    "username": "testuser2",
+    "email": "testuser2@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "profile": {
+        "uuid": "47f14b27-ec3a-43b4-bff6-70dee3fcedc8",
+        "phone": "1234567890",
+        "address": "123 Test Street",
+        "date_of_birth": "1990-01-01",
+        "created_at": "2025-03-25T18:08:14.000446Z",
+        "updated_at": "2025-03-25T18:08:14.000471Z"
+    }
+}
+```
+
 ## Database Models
 
 ### UserProfile
