@@ -677,6 +677,126 @@ curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572
          }'
 ```
 
+### 7. Delete Task
+
+#### Success Case
+First, let's create a task that we'll delete:
+```bash
+# 1. Create a task
+curl -X POST http://localhost:8000/api/tasks/ \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Task to Delete",
+           "description": "This task will be deleted",
+           "assign_to": [
+               {
+                   "user_id": 6,
+                   "status": "pending"
+               }
+           ]
+         }'
+```
+
+Response:
+```json
+{
+    "uuid": "b710a557-7412-4b64-812a-f2be7e572b0b",
+    "title": "Task to Delete",
+    "description": "This task will be deleted",
+    "created_at": "2025-03-25T19:00:00.166520Z",
+    "updated_at": "2025-03-25T19:00:00.166580Z",
+    "created_by": {
+        "id": 6,
+        "username": "testuser2"
+    },
+    "assignments": [
+        {
+            "uuid": "56007a53-fe39-4b16-807b-730e0161650b",
+            "user": {
+                "id": 6,
+                "username": "testuser2"
+            },
+            "status": "pending",
+            "assigned_at": "2025-03-25T19:00:00.263714Z"
+        }
+    ]
+}
+```
+
+Now delete the task:
+```bash
+# 2. Delete the task
+curl -X DELETE "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Success Response:
+- Status Code: 204 No Content
+- No response body
+
+Verify deletion:
+```bash
+# 3. Try to fetch the deleted task
+curl -X GET "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Response (404 Not Found):
+```json
+{
+    "detail": "Not found."
+}
+```
+
+#### Error Cases
+
+1. Trying to delete someone else's task:
+```bash
+curl -X DELETE "http://localhost:8000/api/tasks/someone-elses-task-uuid/" \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Response (403 Forbidden):
+```json
+{
+    "detail": "You can only delete tasks that you created."
+}
+```
+
+2. Invalid UUID:
+```bash
+curl -X DELETE "http://localhost:8000/api/tasks/invalid-uuid/" \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Response (400 Bad Request):
+```json
+{
+    "detail": "Invalid UUID format"
+}
+```
+
+3. Task already deleted:
+```bash
+curl -X DELETE "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Response (404 Not Found):
+```json
+{
+    "detail": "Not found."
+}
+```
+
+**Important Notes:**
+- Only the task creator can delete a task
+- Deletion is permanent
+- All related assignments are also deleted
+- Returns 204 on success with no response body
+- Requires valid JWT token
+
 
 ## Database Models
 
