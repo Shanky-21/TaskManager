@@ -512,6 +512,171 @@ curl -X GET http://localhost:8000/api/tasks/task-uuid/ \
 }
 ```
 
+### 6. Update Task
+
+#### 6.1 Update Task Details
+Update the basic details of a task (only available to task creator).
+
+**Curl Command:**
+```bash
+curl -X PUT "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Updated Login Feature",
+           "description": "Updated description for JWT authentication",
+           "assign_to": [
+               {
+                   "user_id": 6,
+                   "status": "in_progress"
+               },
+               {
+                   "user_id": 2,
+                   "status": "pending"
+               }
+           ]
+         }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+    "uuid": "b710a557-7412-4b64-812a-f2be7e572b0b",
+    "title": "Updated Login Feature",
+    "description": "Updated description for JWT authentication",
+    "created_at": "2025-03-25T18:21:37.166520Z",
+    "updated_at": "2025-03-25T18:45:00.166580Z",
+    "created_by": {
+        "id": 6,
+        "username": "testuser2",
+        "email": "testuser2@example.com",
+        "first_name": "Test",
+        "last_name": "User"
+    },
+    "assignments": [
+        {
+            "uuid": "56007a53-fe39-4b16-807b-730e0161650b",
+            "user": {
+                "id": 6,
+                "username": "testuser2"
+            },
+            "status": "in_progress",
+            "assigned_at": "2025-03-25T18:21:37.263714Z",
+            "updated_at": "2025-03-25T18:45:00.263751Z"
+        },
+        {
+            "uuid": "new-assignment-uuid",
+            "user": {
+                "id": 2,
+                "username": "anotheruser"
+            },
+            "status": "pending",
+            "assigned_at": "2025-03-25T18:45:00.263714Z",
+            "updated_at": "2025-03-25T18:45:00.263751Z"
+        }
+    ]
+}
+```
+
+#### 6.2 Partial Update (PATCH)
+Update specific fields of a task without affecting others.
+
+**Curl Command:**
+```bash
+curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Updated Title Only"
+         }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+    "uuid": "b710a557-7412-4b64-812a-f2be7e572b0b",
+    "title": "Updated Title Only",
+    "description": "Updated description for JWT authentication",
+    "created_at": "2025-03-25T18:21:37.166520Z",
+    "updated_at": "2025-03-25T18:46:00.166580Z",
+    "created_by": {
+        "id": 6,
+        "username": "testuser2"
+    },
+    "assignments": [
+        {
+            "uuid": "56007a53-fe39-4b16-807b-730e0161650b",
+            "user": {
+                "id": 6,
+                "username": "testuser2"
+            },
+            "status": "in_progress",
+            "assigned_at": "2025-03-25T18:21:37.263714Z",
+            "updated_at": "2025-03-25T18:45:00.263751Z"
+        }
+    ]
+}
+```
+
+**Error Responses:**
+
+1. Not Task Creator (403 Forbidden):
+```json
+{
+    "detail": "You do not have permission to perform this action."
+}
+```
+
+2. Invalid Data (400 Bad Request):
+```json
+{
+    "title": ["This field is required."],
+    "assign_to": ["Invalid user_id provided"]
+}
+```
+
+3. Task Not Found (404 Not Found):
+```json
+{
+    "detail": "Not found."
+}
+```
+
+**Important Notes:**
+1. Only the task creator can update task details
+2. PUT request requires all fields (title, description, assign_to)
+3. PATCH request allows partial updates
+4. Existing assignments not included in update will be removed (for PUT)
+5. Assignment updates will create new UserTask entries or update existing ones
+
+
+1. Full update (PUT):
+```bash
+curl -X PUT "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Updated Login Feature",
+           "description": "Updated description for JWT authentication",
+           "assign_to": [
+               {
+                   "user_id": 6,
+                   "status": "in_progress"
+               }
+           ]
+         }'
+```
+
+2. Partial update (PATCH):
+```bash
+curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Updated Title Only"
+         }'
+```
+
 
 ## Database Models
 
