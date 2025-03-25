@@ -2,6 +2,8 @@
 
 A Django-based Task Management System with REST API support. This system allows users to create tasks, assign them to multiple users, and track individual progress for each assignee.
 
+> **Deployment**: This API is deployed and accessible at [https://taskmanager-uxyg.onrender.com](https://taskmanager-uxyg.onrender.com)
+
 ## Table of Contents
 - [Features](#features)
 - [Prerequisites](#prerequisites)
@@ -94,7 +96,6 @@ python manage.py createsuperuser
 ```bash
 python manage.py runserver
 ```
-
 ## Project Structure
 ```
 task_manager/
@@ -126,7 +127,7 @@ task_manager/
 
 #### 1. Obtain JWT Token
 ```bash
-POST /api/token/
+POST https://taskmanager-uxyg.onrender.com/api/token/
 ```
 Request:
 ```json
@@ -147,7 +148,7 @@ Response:
 
 #### 1. Create Task
 ```bash
-POST /api/tasks/
+POST https://taskmanager-uxyg.onrender.com/api/tasks/
 ```
 Request:
 ```json
@@ -198,34 +199,35 @@ Response:
 
 #### 2. Get All Tasks
 ```bash
-GET /api/tasks/
+GET https://taskmanager-uxyg.onrender.com/api/tasks/
 ```
 Response: List of tasks with assignments
 
 #### 3. Get Task Detail
 ```bash
-GET /api/tasks/{uuid}/
+GET https://taskmanager-uxyg.onrender.com/api/tasks/{uuid}/
 ```
 Response: Detailed task information
 
 #### 4. Update Task
 ```bash
-PUT /api/tasks/{uuid}/
+PUT https://taskmanager-uxyg.onrender.com/api/tasks/{uuid}/
 ```
 Request: Same as create task
 Response: Updated task details
 
 #### 5. Get My Tasks
 ```bash
-GET /api/tasks/my_tasks/
+GET https://taskmanager-uxyg.onrender.com/api/tasks/my_tasks/
 ```
 Response: List of tasks assigned to current user
+
 
 ### User APIs
 
 #### 1. Create User (Sign Up)
 ```bash
-POST /api/users/
+POST https://taskmanager-uxyg.onrender.com/api/users/
 ```
 Request:
 ```json
@@ -244,7 +246,7 @@ Response: User details with profile
 
 #### 2. Get Current User Profile
 ```bash
-GET /api/users/me/
+GET https://taskmanager-uxyg.onrender.com/api/users/me/
 ```
 Response: Current user's details with profile
 
@@ -280,7 +282,7 @@ Create a new user account with profile information.
 
 **Curl Command:**
 ```bash
-curl -X POST http://localhost:8000/api/users/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/users/ \
      -H "Content-Type: application/json" \
      -d '{
            "username": "testuser2",
@@ -313,14 +315,13 @@ curl -X POST http://localhost:8000/api/users/ \
 }
 ```
 
-
 ### 2. User Authentication (Get JWT Token)
 
 Get JWT access and refresh tokens for authentication.
 
 **Curl Command:**
 ```bash
-curl -X POST http://localhost:8000/api/token/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/token/ \
      -H "Content-Type: application/json" \
      -d '{
            "username": "testuser2",
@@ -335,10 +336,9 @@ curl -X POST http://localhost:8000/api/token/ \
     "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY..."
 }
 ```
-
 **Error Response (Invalid Credentials):**
 ```bash
-curl -X POST http://localhost:8000/api/token/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/token/ \
      -H "Content-Type: application/json" \
      -d '{
            "username": "testuser2",
@@ -347,10 +347,9 @@ curl -X POST http://localhost:8000/api/token/ \
 ```
 
 **Error Response:**
-```bash
-  {"detail":"No active account found with the given credentials"}%    
+```json
+{"detail":"No active account found with the given credentials"}
 ```
-
 
 ### 3. Create Task
 
@@ -362,7 +361,7 @@ Create a new task and assign it to users.
 export TOKEN="your_jwt_token_here"
 
 # Create task
-curl -X POST http://localhost:8000/api/tasks/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/tasks/ \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -415,7 +414,7 @@ Retrieve all tasks in the system.
 
 **Curl Command:**
 ```bash
-curl -X GET http://localhost:8000/api/tasks/ \
+curl -X GET https://taskmanager-uxyg.onrender.com/api/tasks/ \
      -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -458,7 +457,7 @@ Retrieve tasks assigned to the current user.
 
 **Curl Command:**
 ```bash
-curl -X GET http://localhost:8000/api/tasks/my_tasks/ \
+curl -X GET https://taskmanager-uxyg.onrender.com/api/tasks/my_tasks/ \
      -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -485,7 +484,7 @@ Retrieve details of a specific task.
 
 **Curl Command:**
 ```bash
-curl -X GET http://localhost:8000/api/tasks/task-uuid/ \
+curl -X GET https://taskmanager-uxyg.onrender.com/api/tasks/task-uuid/ \
      -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -519,6 +518,7 @@ curl -X GET http://localhost:8000/api/tasks/task-uuid/ \
 }
 ```
 
+
 ### 6. Update Task
 
 #### 6.1 Update Task Details
@@ -526,7 +526,7 @@ Update the basic details of a task (only available to task creator).
 
 **Curl Command:**
 ```bash
-curl -X PUT "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+curl -X PUT "https://taskmanager-uxyg.onrender.com/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -590,7 +590,7 @@ Update specific fields of a task without affecting others.
 
 **Curl Command:**
 ```bash
-curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+curl -X PATCH "https://taskmanager-uxyg.onrender.com/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -648,49 +648,13 @@ curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572
     "detail": "Not found."
 }
 ```
-
-**Important Notes:**
-1. Only the task creator can update task details
-2. PUT request requires all fields (title, description, assign_to)
-3. PATCH request allows partial updates
-4. Existing assignments not included in update will be removed (for PUT)
-5. Assignment updates will create new UserTask entries or update existing ones
-
-
-1. Full update (PUT):
-```bash
-curl -X PUT "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
-     -H "Authorization: Bearer $TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "title": "Updated Login Feature",
-           "description": "Updated description for JWT authentication",
-           "assign_to": [
-               {
-                   "user_id": 6,
-                   "status": "in_progress"
-               }
-           ]
-         }'
-```
-
-2. Partial update (PATCH):
-```bash
-curl -X PATCH "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
-     -H "Authorization: Bearer $TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "title": "Updated Title Only"
-         }'
-```
-
 ### 7. Delete Task
 
 #### Success Case
 First, let's create a task that we'll delete:
 ```bash
 # 1. Create a task
-curl -X POST http://localhost:8000/api/tasks/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/tasks/ \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -734,7 +698,7 @@ Response:
 Now delete the task:
 ```bash
 # 2. Delete the task
-curl -X DELETE "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+curl -X DELETE "https://taskmanager-uxyg.onrender.com/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
      -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -745,7 +709,7 @@ Success Response:
 Verify deletion:
 ```bash
 # 3. Try to fetch the deleted task
-curl -X GET "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
+curl -X GET "https://taskmanager-uxyg.onrender.com/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
      -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -755,55 +719,6 @@ Response (404 Not Found):
     "detail": "Not found."
 }
 ```
-
-#### Error Cases
-
-1. Trying to delete someone else's task:
-```bash
-curl -X DELETE "http://localhost:8000/api/tasks/someone-elses-task-uuid/" \
-     -H "Authorization: Bearer $TOKEN"
-```
-
-Response (403 Forbidden):
-```json
-{
-    "detail": "You can only delete tasks that you created."
-}
-```
-
-2. Invalid UUID:
-```bash
-curl -X DELETE "http://localhost:8000/api/tasks/invalid-uuid/" \
-     -H "Authorization: Bearer $TOKEN"
-```
-
-Response (400 Bad Request):
-```json
-{
-    "detail": "Invalid UUID format"
-}
-```
-
-3. Task already deleted:
-```bash
-curl -X DELETE "http://localhost:8000/api/tasks/b710a557-7412-4b64-812a-f2be7e572b0b/" \
-     -H "Authorization: Bearer $TOKEN"
-```
-
-Response (404 Not Found):
-```json
-{
-    "detail": "Not found."
-}
-```
-
-**Important Notes:**
-- Only the task creator can delete a task
-- Deletion is permanent
-- All related assignments are also deleted
-- Returns 204 on success with no response body
-- Requires valid JWT token
-
 
 ## Database Models
 
@@ -823,7 +738,7 @@ Response (404 Not Found):
 
 1. Get authentication token:
 ```bash
-curl -X POST http://localhost:8000/api/token/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/token/ \
      -H "Content-Type: application/json" \
      -d '{"username": "your_username", "password": "your_password"}'
 ```
@@ -836,11 +751,11 @@ export TOKEN="your_token_here"
 3. Make authenticated requests:
 ```bash
 # List tasks
-curl http://localhost:8000/api/tasks/ \
+curl https://taskmanager-uxyg.onrender.com/api/tasks/ \
      -H "Authorization: Bearer $TOKEN"
 
 # Create task
-curl -X POST http://localhost:8000/api/tasks/ \
+curl -X POST https://taskmanager-uxyg.onrender.com/api/tasks/ \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
