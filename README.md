@@ -43,7 +43,7 @@ A Django-based Task Management System with REST API support. This system allows 
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone git@github.com:Shanky-21/TaskManager.git
 cd task_manager
 ```
 
