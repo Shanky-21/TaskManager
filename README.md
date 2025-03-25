@@ -61,7 +61,6 @@ pip install -r requirements.txt
 ```env
 DEBUG=True
 SECRET_KEY=your-secret-key
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 
 # Database settings
 DB_NAME=your_db_name
