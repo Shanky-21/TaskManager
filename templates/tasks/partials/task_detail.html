@@ -1,0 +1,59 @@
+<div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0">{{ task.title }}</h3>
+    <div class="btn-group">
+        {% if task.created_by == request.user %}
+        <a href="{% url 'tasks:edit_task' task.uuid %}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <button onclick="deleteTask('{{ task.uuid }}')" class="btn btn-outline-danger">
+            <i class="fas fa-trash me-1"></i>Delete
+        </button>
+        {% endif %}
+    </div>
+</div>
+<div class="card-body">
+    <div class="mb-4">
+        <h5>Description</h5>
+        <p>{{ task.description }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h5>Due Date</h5>
+        <p>{{ task.due_date|date:"M d, Y" }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h5>Assigned Users</h5>
+        <ul class="list-group">
+            {% for ua in task.user_assignments.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ ua.user.get_full_name|default:ua.user.username }}
+                <div>
+                    {% if ua.user == request.user %}
+                    <select class="form-select form-select-sm d-inline-block w-auto me-2" 
+                            onchange="updateTaskStatus('{{ task.uuid }}', this.value)">
+                        <option value="pending" {% if ua.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if ua.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if ua.status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                    {% else %}
+                    <span class="badge bg-{{ ua.status }}">{{ ua.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="mb-4">
+        <h5>Task Information</h5>
+        <p class="mb-1"><strong>Created by:</strong> {{ task.created_by.get_full_name|default:task.created_by.username }}</p>
+        <p class="mb-1"><strong>Created at:</strong> {{ task.created_at|date:"M d, Y g:i A" }}</p>
+        <p class="mb-1"><strong>Last updated:</strong> {{ task.updated_at|date:"M d, Y g:i A" }}</p>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="realTimeUpdates" onchange="toggleRealTimeUpdates(this.checked)">
+        <label class="form-check-label" for="realTimeUpdates">Enable real-time updates</label>
+    </div>
+</div> 

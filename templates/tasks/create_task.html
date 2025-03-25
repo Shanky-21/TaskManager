@@ -1,65 +1,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="mb-4">
+                <a href="{% url 'tasks:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+
             <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Create New Task</h3>
+                </div>
                 <div class="card-body">
-                    <h2 class="card-title mb-4">Create New Task</h2>
-                    
-                    <form method="post" id="taskForm">
-                        {% csrf_token %}
-                        
-                        <!-- Task Details -->
-                        <div class="mb-4">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
-                            {{ form.title }}
+                    <form id="createTaskForm" onsubmit="handleSubmit(event)">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" required>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                            {{ form.description }}
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="3" required></textarea>
                         </div>
 
-                        <!-- Assignments Section -->
-                        <div class="mb-4">
-                            <h4>Assign Users</h4>
-                            <div class="assignment-form mb-3">
-                                <div class="row">
-                                    <div class="col-md-5">
-                                        <select class="form-control" id="userSelect">
-                                            <option value="">Select User</option>
-                                            {% for user in users %}
-                                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <select class="form-control" id="statusSelect">
-                                            <option value="">Select Status</option>
-                                            {% for value, label in status_choices %}
-                                                <option value="{{ value }}">{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="btn btn-primary" onclick="addAssignment()">Add</button>
-                                    </div>
-                                </div>
+                        <div class="mb-3">
+                            <label for="dueDate" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Assign Users</label>
+                            <div id="userAssignments">
+                                <!-- User assignments will be loaded here dynamically -->
                             </div>
-
-                            <!-- Assignments List -->
-                            <div id="assignmentsList" class="list-group mb-3">
-                                <!-- Assignments will be added here dynamically -->
-                            </div>
-
-                            {{ form.assignments }}
+                            <button type="button" class="btn btn-outline-secondary mt-2" onclick="addUserAssignment()">
+                                <i class="fas fa-plus me-1"></i>Add User
+                            </button>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'tasks:dashboard' %}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Create Task</button>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Create Task
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -70,86 +55,100 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="/static/js/api.js"></script>
 <script>
-let assignments = [];
+    let users = [];
+    let assignmentCounter = 0;
 
-function addAssignment() {
-    const userSelect = document.getElementById('userSelect');
-    const statusSelect = document.getElementById('statusSelect');
-    
-    const userId = userSelect.value;
-    const userName = userSelect.options[userSelect.selectedIndex].text;
-    const status = statusSelect.value;
-    const statusText = statusSelect.options[statusSelect.selectedIndex].text;
-
-    if (!userId || !status) {
-        alert('Please select both user and status');
-        return;
+    // Load users
+    async function loadUsers() {
+        try {
+            const response = await fetch('/api/users/');
+            users = await response.json();
+            addUserAssignment(); // Add first assignment row by default
+        } catch (error) {
+            console.error('Error loading users:', error);
+            alert('Failed to load users. Please try again.');
+        }
     }
 
-    // Check if user is already assigned
-    if (assignments.some(a => a.user_id === userId)) {
-        alert('This user is already assigned to the task');
-        return;
-    }
-
-    // Add to assignments array
-    assignments.push({
-        user_id: userId,
-        status: status
-    });
-
-    // Update hidden input
-    document.getElementById('id_assignments').value = JSON.stringify(assignments);
-
-    // Add to visual list
-    const assignmentsList = document.getElementById('assignmentsList');
-    const assignmentItem = document.createElement('div');
-    assignmentItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-    assignmentItem.innerHTML = `
-        <div>
-            <strong>${userName}</strong>
-            <span class="badge bg-secondary ms-2">${statusText}</span>
-        </div>
-        <button type="button" class="btn btn-sm btn-danger" onclick="removeAssignment('${userId}')">
-            Remove
-        </button>
-    `;
-    assignmentsList.appendChild(assignmentItem);
-
-    // Reset selects
-    userSelect.value = '';
-    statusSelect.value = '';
-}
-
-function removeAssignment(userId) {
-    assignments = assignments.filter(a => a.user_id !== userId);
-    document.getElementById('id_assignments').value = JSON.stringify(assignments);
-    renderAssignments();
-}
-
-function renderAssignments() {
-    const assignmentsList = document.getElementById('assignmentsList');
-    assignmentsList.innerHTML = '';
-    assignments.forEach(assignment => {
-        const userSelect = document.getElementById('userSelect');
-        const statusSelect = document.getElementById('statusSelect');
-        const userName = [...userSelect.options].find(opt => opt.value === assignment.user_id).text;
-        const statusText = [...statusSelect.options].find(opt => opt.value === assignment.status).text;
-
-        const assignmentItem = document.createElement('div');
-        assignmentItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-        assignmentItem.innerHTML = `
-            <div>
-                <strong>${userName}</strong>
-                <span class="badge bg-secondary ms-2">${statusText}</span>
+    // Create user assignment row
+    function createUserAssignmentRow(id) {
+        return `
+            <div class="row mb-2" id="assignment-${id}">
+                <div class="col-md-6">
+                    <select class="form-select user-select" required>
+                        <option value="">Select User</option>
+                        ${users.map(user => `
+                            <option value="${user.id}">${user.username}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select status-select" required>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger" onclick="removeUserAssignment(${id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeAssignment('${assignment.user_id}')">
-                Remove
-            </button>
         `;
-        assignmentsList.appendChild(assignmentItem);
-    });
-}
+    }
+
+    // Add user assignment row
+    function addUserAssignment() {
+        const container = document.getElementById('userAssignments');
+        container.insertAdjacentHTML('beforeend', createUserAssignmentRow(assignmentCounter++));
+    }
+
+    // Remove user assignment row
+    function removeUserAssignment(id) {
+        const element = document.getElementById(`assignment-${id}`);
+        if (element) {
+            element.remove();
+        }
+    }
+
+    // Handle form submission
+    async function handleSubmit(event) {
+        event.preventDefault();
+
+        // Gather assignments
+        const assignments = [];
+        document.querySelectorAll('#userAssignments .row').forEach(row => {
+            const userId = row.querySelector('.user-select').value;
+            const status = row.querySelector('.status-select').value;
+            if (userId) {
+                assignments.push({
+                    user_id: parseInt(userId),
+                    status: status
+                });
+            }
+        });
+
+        // Create task data
+        const taskData = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            due_date: document.getElementById('dueDate').value,
+            assignments: assignments
+        };
+
+        try {
+            await API.tasks.create(taskData);
+            window.location.href = '/tasks/';
+        } catch (error) {
+            console.error('Error creating task:', error);
+            alert('Failed to create task. Please try again.');
+        }
+    }
+
+    // Initialize
+    loadUsers();
 </script>
 {% endblock %}

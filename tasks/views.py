@@ -38,38 +38,80 @@ def edit_task(request, uuid):
     if request.method == 'POST':
         form = TaskForm(request.POST, instance=task)
         if form.is_valid():
-            form.save()
+            task = form.save()
+            
+            # Update assignments
+            new_assignments = json.loads(request.POST.get('assignments', '[]'))
+            
+            # Delete existing assignments not in the new list
+            existing_user_ids = [a['user_id'] for a in new_assignments]
+            task.user_assignments.exclude(user_id__in=existing_user_ids).delete()
+            
+            # Create or update assignments
+            for assignment in new_assignments:
+                UserTask.objects.update_or_create(
+                    task=task,
+                    user_id=assignment['user_id'],
+                    defaults={'status': assignment['status']}
+                )
+            
             messages.success(request, 'Task updated successfully!')
             return redirect('tasks:task_detail', uuid=uuid)
     else:
         form = TaskForm(instance=task)
+        # Get current assignments for the form
+        current_assignments = [
+            {
+                'user_id': ua.user_id,
+                'status': ua.status
+            }
+            for ua in task.user_assignments.all()
+        ]
+        form.initial['assignments'] = json.dumps(current_assignments)
     
-    return render(request, 'tasks/edit_task.html', {
+    context = {
         'form': form,
-        'task': task
-    })
+        'task': task,
+        'users': User.objects.all(),
+        'status_choices': UserTask.STATUS_CHOICES,
+        'current_assignments': task.user_assignments.all()
+    }
+    return render(request, 'tasks/edit_task.html', context)
   
 
 @login_required
 def task_detail(request, uuid):
-    task = get_object_or_404(Task, uuid=uuid)
-    user_tasks = task.user_assignments.all()
-    return render(request, 'tasks/task_detail.html', {
+    task = get_object_or_404(
+        Task.objects.prefetch_related('user_assignments', 'user_assignments__user'),
+        uuid=uuid
+    )
+    
+    # Get the user's assignment for this task if it exists
+    user_task = task.user_assignments.filter(user=request.user).first()
+    
+    context = {
         'task': task,
-        'user_tasks': user_tasks,
-        'can_edit': request.user == task.created_by
-    })
+        'user_task': user_task,
+        'can_edit': request.user == task.created_by,
+        'user_assignments': task.user_assignments.all()
+    }
+    return render(request, 'tasks/task_detail.html', context)
 
 @login_required
 def dashboard(request):
-    user_tasks = Task.objects.filter(assigned_users=request.user)
-    all_tasks = Task.objects.all()
-    users = User.objects.all()
+    # Get tasks where the user is assigned
+    user_tasks = Task.objects.filter(user_assignments__user=request.user)
+    
+    # Get all tasks for admin view
+    all_tasks = Task.objects.all().prefetch_related('user_assignments', 'user_assignments__user')
     
     # Filter by user if specified
     filter_user = request.GET.get('user')
     if filter_user:
-        all_tasks = all_tasks.filter(assigned_users__id=filter_user)
+        all_tasks = all_tasks.filter(user_assignments__user_id=filter_user)
+
+    # Get all users for the filter dropdown
+    users = User.objects.all()
 
     context = {
         'user_tasks': user_tasks,
@@ -89,7 +131,7 @@ def create_task(request):
             task.save()
             
             # Handle assignments
-            assignments = json.loads(form.cleaned_data.get('assignments', '[]'))
+            assignments = json.loads(request.POST.get('assignments', '[]'))
             for assignment in assignments:
                 UserTask.objects.create(
                     task=task,
@@ -108,12 +150,6 @@ def create_task(request):
         'status_choices': UserTask.STATUS_CHOICES
     }
     return render(request, 'tasks/create_task.html', context)
-
-@login_required
-def task_detail(request, uuid):
-    task = get_object_or_404(Task, uuid=uuid)
-    return render(request, 'tasks/task_detail.html', {'task': task})
-  
 
 @login_required
 def delete_task(request, uuid):

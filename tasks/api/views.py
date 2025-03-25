@@ -39,7 +39,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_tasks(self, request):
         """Get tasks assigned to the current user"""
-        tasks = Task.objects.filter(assigned_users=request.user)
+        tasks = Task.objects.filter(user_assignments__user=request.user)
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 

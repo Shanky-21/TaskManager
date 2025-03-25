@@ -1,41 +1,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="mb-4">
+                <a href="{% url 'tasks:task_detail' uuid=task.uuid %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Task
+                </a>
+            </div>
+
             <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Edit Task</h3>
+                </div>
                 <div class="card-body">
-                    <h2 class="card-title">Edit Task</h2>
-                    
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
+                    <form id="editTaskForm" onsubmit="handleSubmit(event)">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" required>
+                        </div>
 
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {% for field in form %}
-                            <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label">
-                                    {{ field.label }}
-                                </label>
-                                {{ field }}
-                                {% if field.errors %}
-                                    {% for error in field.errors %}
-                                        <div class="text-danger">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        {% endfor %}
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="3" required></textarea>
+                        </div>
 
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
-                            <a href="{% url 'tasks:task_detail' task.uuid %}" class="btn btn-secondary">Cancel</a>
+                        <div class="mb-3">
+                            <label for="dueDate" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Assigned Users</label>
+                            <div id="userAssignments">
+                                <!-- User assignments will be loaded here dynamically -->
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary mt-2" onclick="addUserAssignment()">
+                                <i class="fas fa-plus me-1"></i>Add User
+                            </button>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -43,4 +52,119 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/api.js"></script>
+<script>
+    let users = [];
+    let assignmentCounter = 0;
+    let taskUuid = window.location.pathname.split('/')[2];
+
+    // Load users and task data
+    async function initialize() {
+        try {
+            // Load users
+            const usersResponse = await fetch('/api/users/');
+            users = await usersResponse.json();
+
+            // Load task data
+            const task = await API.tasks.get(taskUuid);
+            
+            // Fill form with task data
+            document.getElementById('title').value = task.title;
+            document.getElementById('description').value = task.description;
+            document.getElementById('dueDate').value = task.due_date;
+
+            // Add existing assignments
+            task.assigned_users.forEach(user => {
+                addUserAssignment(user);
+            });
+        } catch (error) {
+            console.error('Error initializing form:', error);
+            alert('Failed to load task data. Please try again.');
+        }
+    }
+
+    // Create user assignment row
+    function createUserAssignmentRow(id, selectedUser = null) {
+        return `
+            <div class="row mb-2" id="assignment-${id}">
+                <div class="col-md-6">
+                    <select class="form-select user-select" required>
+                        <option value="">Select User</option>
+                        ${users.map(user => `
+                            <option value="${user.id}" ${selectedUser && selectedUser.id === user.id ? 'selected' : ''}>
+                                ${user.username}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select status-select" required>
+                        <option value="pending" ${selectedUser && selectedUser.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="in_progress" ${selectedUser && selectedUser.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="completed" ${selectedUser && selectedUser.status === 'completed' ? 'selected' : ''}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger" onclick="removeUserAssignment(${id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Add user assignment row
+    function addUserAssignment(selectedUser = null) {
+        const container = document.getElementById('userAssignments');
+        container.insertAdjacentHTML('beforeend', createUserAssignmentRow(assignmentCounter++, selectedUser));
+    }
+
+    // Remove user assignment row
+    function removeUserAssignment(id) {
+        const element = document.getElementById(`assignment-${id}`);
+        if (element) {
+            element.remove();
+        }
+    }
+
+    // Handle form submission
+    async function handleSubmit(event) {
+        event.preventDefault();
+
+        // Gather assignments
+        const assignments = [];
+        document.querySelectorAll('#userAssignments .row').forEach(row => {
+            const userId = row.querySelector('.user-select').value;
+            const status = row.querySelector('.status-select').value;
+            if (userId) {
+                assignments.push({
+                    user_id: parseInt(userId),
+                    status: status
+                });
+            }
+        });
+
+        // Create task data
+        const taskData = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            due_date: document.getElementById('dueDate').value,
+            assignments: assignments
+        };
+
+        try {
+            await API.tasks.update(taskUuid, taskData);
+            window.location.href = `/tasks/${taskUuid}/`;
+        } catch (error) {
+            console.error('Error updating task:', error);
+            alert('Failed to update task. Please try again.');
+        }
+    }
+
+    // Initialize
+    initialize();
+</script>
 {% endblock %}

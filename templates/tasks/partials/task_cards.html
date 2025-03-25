@@ -1,0 +1,52 @@
+{% for task in tasks %}
+<div class="col-md-6 mb-4">
+    <div class="card h-100">
+        <div class="card-body">
+            <h5 class="card-title">{{ task.title }}</h5>
+            <p class="card-text">{{ task.description|truncatewords:30 }}</p>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary">{{ task.user_assignments.count }} Assignee(s)</span>
+                <small class="text-muted">Due: {{ task.due_date|date:"M d, Y" }}</small>
+            </div>
+            <div>
+                <small class="text-muted">
+                    Created by: {{ task.created_by.get_full_name|default:task.created_by.username }}
+                </small>
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">
+                    Assigned to: 
+                    {% for ua in task.user_assignments.all %}
+                    <span class="badge bg-{{ ua.status }}">
+                        {{ ua.user.get_full_name|default:ua.user.username }}
+                    </span>
+                    {% if not forloop.last %} {% endif %}
+                    {% endfor %}
+                </small>
+            </div>
+        </div>
+        <div class="card-footer bg-transparent">
+            <div class="btn-group w-100">
+                <a href="{% url 'tasks:task_detail' task.uuid %}" class="btn btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i>View
+                </a>
+                {% if task.created_by == request.user %}
+                <a href="{% url 'tasks:edit_task' task.uuid %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12">
+    <div class="alert alert-info">
+        {% if forloop.parentloop.counter == 1 %}
+            You don't have any tasks assigned to you.
+        {% else %}
+            No tasks found.
+        {% endif %}
+    </div>
+</div>
+{% endfor %} 

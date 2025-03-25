@@ -1,76 +1,223 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4"> <!-- Added py-4 for vertical padding -->
-    <div class="row">
-        <div class="col-lg-10 offset-lg-1"> <!-- Added column offset for better centering -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Task Dashboard</h2>
-                <a href="{% url 'tasks:create_task' %}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Create New Task
-                </a>
-            </div>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3">Task Dashboard</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'tasks:create_task' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Create New Task
+            </a>
+        </div>
+    </div>
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-            <div class="card shadow-sm"> <!-- Added shadow-sm for subtle elevation -->
-                <div class="card-body p-4"> <!-- Added more padding inside card -->
-                    <h5 class="card-title mb-4">All Tasks</h5>
-                    
-                    <!-- Filter Form -->
-                    <form method="get" class="mb-4">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <select name="user" class="form-select">
-                                        <option value="">All Users</option>
-                                        {% for user in users %}
-                                            <option value="{{ user.id }}" {% if selected_user == user.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ user.get_full_name|default:user.username }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-outline-primary">Filter</button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-
-                    <!-- Tasks List -->
-                    <div class="list-group">
-                        {% for task in all_tasks %}
-                            <a href="{% url 'tasks:task_detail' task.uuid %}" 
-                               class="list-group-item list-group-item-action p-3 mb-2 rounded">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">{{ task.title }}</h5>
-                                    <span class="badge bg-{{ task.status }} rounded-pill">
-                                        {{ task.get_status_display }}
-                                    </span>
-                                </div>
-                                <p class="mb-1 text-muted">{{ task.description|truncatewords:30 }}</p>
-                                <small class="text-muted">
-                                    <strong>Assigned to:</strong> 
-                                    {% for user in task.assigned_users.all %}
-                                        {{ user.get_full_name|default:user.username }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                </small>
-                            </a>
-                        {% empty %}
-                            <div class="text-center py-5 text-muted">
-                                <p>No tasks found.</p>
-                            </div>
+    <!-- Task Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <select id="userFilter" class="form-select" onchange="handleUserFilter(this.value)">
+                        <option value="">All Users</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if selected_user == user.id|stringformat:"s" %}selected{% endif %}>
+                            {{ user.get_full_name|default:user.username }}
+                        </option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="useApi" onchange="toggleApiUsage(this.checked)">
+                        <label class="form-check-label" for="useApi">Use Real-time Updates</label>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- My Tasks Section -->
+    <div class="mb-5">
+        <h3 class="mb-4">My Tasks</h3>
+        <div id="myTasksList" class="row loading-state">
+            {% include "tasks/partials/task_cards.html" with tasks=user_tasks %}
+        </div>
+    </div>
+
+    <!-- All Tasks Section -->
+    <div>
+        <h3 class="mb-4">All Tasks</h3>
+        <div id="allTasksList" class="row loading-state">
+            {% include "tasks/partials/task_cards.html" with tasks=all_tasks %}
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/api.js"></script>
+<script>
+    let isUsingApi = false;
+    let currentUser = null;
+    let isLoading = false;
+
+    // Helper function to show loading state
+    function showLoading(elementId, message = 'Loading...') {
+        const element = document.getElementById(elementId);
+        const existingOverlay = element.querySelector('.loading-overlay');
+        if (!existingOverlay) {
+            element.insertAdjacentHTML('beforeend', `
+                <div class="loading-overlay">
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">${message}</p>
+                    </div>
+                </div>
+            `);
+        }
+    }
+
+    // Helper function to hide loading state
+    function hideLoading(elementId) {
+        const element = document.getElementById(elementId);
+        const overlay = element.querySelector('.loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    // Helper function to get status color
+    function getStatusColor(status) {
+        switch(status) {
+            case 'completed': return 'success';
+            case 'in_progress': return 'warning';
+            case 'pending': return 'secondary';
+            default: return 'primary';
+        }
+    }
+
+    // Create task card HTML
+    function createTaskCard(task) {
+        const userAssignments = task.user_assignments || [];
+        const assignees = userAssignments.map(ua => ua.user.username).join(', ');
+        const isCreator = task.created_by === currentUser;
+        
+        return `
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">${task.title}</h5>
+                        <p class="card-text">${task.description}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary">${userAssignments.length} Assignee(s)</span>
+                            <small class="text-muted">Due: ${new Date(task.due_date).toLocaleDateString()}</small>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                Assigned to: ${assignees}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100">
+                            <a href="/tasks/${task.uuid}/" class="btn btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            ${isCreator ? `
+                                <a href="/tasks/${task.uuid}/edit/" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Load tasks using API
+    async function loadTasks() {
+        if (!isUsingApi || isLoading) return;
+
+        isLoading = true;
+        showLoading('myTasksList', 'Loading your tasks...');
+        showLoading('allTasksList', 'Loading all tasks...');
+
+        try {
+            const userFilter = document.getElementById('userFilter').value;
+            
+            // Load my tasks
+            const myTasks = await API.tasks.myTasks();
+            document.getElementById('myTasksList').innerHTML = 
+                myTasks.map(task => createTaskCard(task)).join('') || 
+                '<div class="col-12"><div class="alert alert-info">You don\'t have any tasks assigned to you.</div></div>';
+
+            // Load all tasks
+            const allTasks = await API.tasks.list(userFilter ? `?user=${userFilter}` : '');
+            document.getElementById('allTasksList').innerHTML = 
+                allTasks.map(task => createTaskCard(task)).join('') || 
+                '<div class="col-12"><div class="alert alert-info">No tasks found.</div></div>';
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            document.getElementById('myTasksList').innerHTML = 
+                '<div class="col-12"><div class="alert alert-danger">Failed to load your tasks. Please try again.</div></div>';
+            document.getElementById('allTasksList').innerHTML = 
+                '<div class="col-12"><div class="alert alert-danger">Failed to load tasks. Please try again.</div></div>';
+        } finally {
+            hideLoading('myTasksList');
+            hideLoading('allTasksList');
+            isLoading = false;
+        }
+    }
+
+    // Handle user filter change
+    function handleUserFilter(value) {
+        if (isUsingApi) {
+            loadTasks();
+        } else {
+            window.location.href = value ? `?user=${value}` : window.location.pathname;
+        }
+    }
+
+    // Toggle API usage
+    function toggleApiUsage(useApi) {
+        isUsingApi = useApi;
+        if (useApi) {
+            loadTasks();
+        } else {
+            window.location.reload();
+        }
+    }
+
+    // Initialize
+    (async () => {
+        try {
+            const userResponse = await API.user.me();
+            currentUser = userResponse.id;
+        } catch (error) {
+            console.error('Error getting current user:', error);
+        }
+    })();
+
+    // Auto-refresh when using API
+    setInterval(() => {
+        if (isUsingApi && !isLoading) {
+            loadTasks();
+        }
+    }, 30000); // Refresh every 30 seconds
+</script>
 {% endblock %}
