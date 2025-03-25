@@ -345,6 +345,174 @@ curl -X POST http://localhost:8000/api/token/ \
 ```
 
 
+### 3. Create Task
+
+Create a new task and assign it to users.
+
+**Curl Command:**
+```bash
+# First, set your token
+export TOKEN="your_jwt_token_here"
+
+# Create task
+curl -X POST http://localhost:8000/api/tasks/ \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Implement Login Feature",
+           "description": "Add JWT authentication to the frontend",
+           "assign_to": [
+               {
+                   "user_id": 6,
+                   "status": "pending"
+               }
+           ]
+         }'
+```
+
+**Success Response:**
+```json
+{
+    "uuid": "task-uuid-here",
+    "title": "Implement Login Feature",
+    "description": "Add JWT authentication to the frontend",
+    "created_at": "2024-03-25T18:30:00.000Z",
+    "updated_at": "2024-03-25T18:30:00.000Z",
+    "created_by": {
+        "id": 6,
+        "username": "testuser2",
+        "email": "testuser2@example.com",
+        "first_name": "Test",
+        "last_name": "User"
+    },
+    "assignments": [
+        {
+            "uuid": "assignment-uuid-here",
+            "user": {
+                "id": 6,
+                "username": "testuser2",
+                "email": "testuser2@example.com"
+            },
+            "status": "pending",
+            "assigned_at": "2024-03-25T18:30:00.000Z"
+        }
+    ]
+}
+```
+
+### 4. Fetch Tasks
+
+#### 4.1 Get All Tasks
+
+Retrieve all tasks in the system.
+
+**Curl Command:**
+```bash
+curl -X GET http://localhost:8000/api/tasks/ \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+**Response:**
+```json
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "uuid": "task-uuid-here",
+            "title": "Implement Login Feature",
+            "description": "Add JWT authentication to the frontend",
+            "created_at": "2024-03-25T18:30:00.000Z",
+            "updated_at": "2024-03-25T18:30:00.000Z",
+            "created_by": {
+                "id": 6,
+                "username": "testuser2"
+            },
+            "assignments": [
+                {
+                    "uuid": "assignment-uuid-here",
+                    "user": {
+                        "id": 6,
+                        "username": "testuser2"
+                    },
+                    "status": "pending",
+                    "assigned_at": "2024-03-25T18:30:00.000Z"
+                }
+            ]
+        }
+    ]
+}
+```
+
+#### 4.2 Get My Tasks
+
+Retrieve tasks assigned to the current user.
+
+**Curl Command:**
+```bash
+curl -X GET http://localhost:8000/api/tasks/my_tasks/ \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+**Response:**
+```json
+{
+    "count": 1,
+    "results": [
+        {
+            "uuid": "task-uuid-here",
+            "title": "Implement Login Feature",
+            "description": "Add JWT authentication to the frontend",
+            "status": "pending",
+            "created_at": "2024-03-25T18:30:00.000Z",
+            "updated_at": "2024-03-25T18:30:00.000Z"
+        }
+    ]
+}
+```
+
+#### 4.3 Get Specific Task
+
+Retrieve details of a specific task.
+
+**Curl Command:**
+```bash
+curl -X GET http://localhost:8000/api/tasks/task-uuid/ \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+**Response:**
+```json
+{
+    "uuid": "task-uuid-here",
+    "title": "Implement Login Feature",
+    "description": "Add JWT authentication to the frontend",
+    "created_at": "2024-03-25T18:30:00.000Z",
+    "updated_at": "2024-03-25T18:30:00.000Z",
+    "created_by": {
+        "id": 6,
+        "username": "testuser2",
+        "email": "testuser2@example.com",
+        "first_name": "Test",
+        "last_name": "User"
+    },
+    "assignments": [
+        {
+            "uuid": "assignment-uuid-here",
+            "user": {
+                "id": 6,
+                "username": "testuser2",
+                "email": "testuser2@example.com"
+            },
+            "status": "pending",
+            "assigned_at": "2024-03-25T18:30:00.000Z"
+        }
+    ]
+}
+```
+
+
 ## Database Models
 
 ### UserProfile
